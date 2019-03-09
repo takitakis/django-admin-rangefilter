@@ -13,6 +13,7 @@ setup(
     packages=[
         "rangefilter",
     ],
+    include_package_data=True,
     classifiers=[
         'Programming Language :: Python :: 3.6',
     ],
