@@ -11,7 +11,7 @@ setup(
     license='MIT',
     keywords='rangefilter',
     packages=[
-        "django-admin-rangefilter",
+        "rangefilter",
     ],
     classifiers=[
         'Programming Language :: Python :: 3.6',
