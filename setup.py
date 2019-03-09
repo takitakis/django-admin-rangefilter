@@ -2,16 +2,16 @@ from setuptools import setup
 
 
 setup(
-    name='django_admin_rangefilter_for_yyyymm_integer_field',
+    name='rangefilter',
     version='0.1',
-    description="It's rangefilter for yyyymm-integer-field",
+    description="Custom rangefilter",
     url='https://github.com/takitakis/django-admin-rangefilter',
     author='Takeaki Kawai',
     author_email='taki.kwi@gmail.com',
     license='MIT',
-    keywords='rangefilter integer-field',
+    keywords='rangefilter',
     packages=[
-        "django_admin_rangefilter_for_yyyymm_integer_field",
+        "rangefilter",
     ],
     classifiers=[
         'Programming Language :: Python :: 3.6',
