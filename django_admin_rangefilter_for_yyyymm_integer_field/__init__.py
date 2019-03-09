@@ -7,7 +7,7 @@ __author__ = 'Dmitriy Sokolov'
 __version__ = '0.3.12'
 
 
-default_app_config = 'rangefilter.apps.RangeFilterConfig'
+default_app_config = 'django_admin_rangefilter_for_yyyymm_integer_field.apps.RangeFilterConfig'
 
 
 VERSION = __version__

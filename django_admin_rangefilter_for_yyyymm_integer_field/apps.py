@@ -7,5 +7,5 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class RangeFilterConfig(AppConfig):
-    name = 'rangefilter'
+    name = 'django_admin_rangefilter_for_yyyymm_integer_field'
     verbose_name = _('Range Filter')
