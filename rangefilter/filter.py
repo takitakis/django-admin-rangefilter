@@ -16,18 +16,43 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin
 from django.utils.html import format_html
-from django.utils import timezone
 from django.template.defaultfilters import slugify
 from django.templatetags.static import StaticNode
 from django.utils.translation import ugettext as _
-from django.contrib.admin.widgets import AdminDateWidget, AdminSplitDateTime as BaseAdminSplitDateTime
+from django.contrib.admin.widgets import AdminTextInputWidget
+
+import re
+from django.forms import IntegerField
+from django.utils import formats
+from django.core.exceptions import ValidationError
+from django.utils.encoding import force_text
 
 
-class AdminSplitDateTime(BaseAdminSplitDateTime):
-    def format_output(self, rendered_widgets):
-        return format_html('<p class="datetime">{}</p><p class="datetime rangetime">{}</p>',
-                           rendered_widgets[0],
-                           rendered_widgets[1])
+class CustomIntegerField(IntegerField):
+
+    default_error_messages = {
+        'invalid': _('整数6桁(yyyymm)形式で 入力してください。'),
+    }
+
+    def to_python(self, value):
+        """
+        Validates that int() can be called on the input. Returns the result
+        of int(). Returns None for empty values.
+        """
+        value = super(IntegerField, self).to_python(value)
+        if value in self.empty_values:
+            return None
+        if self.localize:
+            value = formats.sanitize_separators(value)
+        # Validate if yyyymm format or not.
+        if not re.match(r'^\d{6}$', value):
+            raise ValidationError(self.error_messages['invalid'], code='invalid')
+        # Strip trailing decimal and zeros.
+        try:
+            value = int(self.re_decimal.sub('', force_text(value)))
+        except (ValueError, TypeError):
+            raise ValidationError(self.error_messages['invalid'], code='invalid')
+        return value
 
 
 class DateRangeFilter(admin.filters.FieldListFilter):
@@ -39,18 +64,6 @@ class DateRangeFilter(admin.filters.FieldListFilter):
         self.request = request
         self.form = self.get_form(request)
 
-    def get_timezone(self, request):
-        return timezone.get_default_timezone()
-
-    @staticmethod
-    def make_dt_aware(value, timezone):
-        if settings.USE_TZ and pytz is not None:
-            default_tz = timezone
-            if value.tzinfo is not None:
-                value = default_tz.normalize(value)
-            else:
-                value = default_tz.localize(value)
-        return value
 
     def choices(self, cl):
         yield {
@@ -84,15 +97,9 @@ class DateRangeFilter(admin.filters.FieldListFilter):
         date_value_lte = validated_data.get(self.lookup_kwarg_lte, None)
 
         if date_value_gte:
-            query_params['{0}__gte'.format(self.field_path)] = self.make_dt_aware(
-                datetime.datetime.combine(date_value_gte, datetime.time.min),
-                self.get_timezone(request),
-            )
+            query_params['{0}__gte'.format(self.field_path)] = date_value_gte
         if date_value_lte:
-            query_params['{0}__lte'.format(self.field_path)] = self.make_dt_aware(
-                datetime.datetime.combine(date_value_lte, datetime.time.max),
-                self.get_timezone(request),
-            )
+            query_params['{0}__lte'.format(self.field_path)] = date_value_lte
 
         return query_params
 
@@ -126,15 +133,15 @@ class DateRangeFilter(admin.filters.FieldListFilter):
 
     def _get_form_fields(self):
         return OrderedDict((
-                (self.lookup_kwarg_gte, forms.DateField(
+                (self.lookup_kwarg_gte, CustomIntegerField(
                     label='',
-                    widget=AdminDateWidget(attrs={'placeholder': _('From date')}),
+                    widget=AdminTextInputWidget(attrs={'placeholder': _('From date')}),
                     localize=True,
                     required=False
                 )),
-                (self.lookup_kwarg_lte, forms.DateField(
+                (self.lookup_kwarg_lte, CustomIntegerField(
                     label='',
-                    widget=AdminDateWidget(attrs={'placeholder': _('To date')}),
+                    widget=AdminTextInputWidget(attrs={'placeholder': _('To date')}),
                     localize=True,
                     required=False
                 )),
@@ -160,45 +167,3 @@ class DateRangeFilter(admin.filters.FieldListFilter):
             js=['admin/js/%s' % url for url in js],
             css={'all': ['admin/css/%s' % path for path in css]}
         )
-
-
-class DateTimeRangeFilter(DateRangeFilter):
-    def _get_expected_fields(self):
-        expected_fields = []
-        for field in [self.lookup_kwarg_gte, self.lookup_kwarg_lte]:
-            for i in range(2):
-                expected_fields.append('{}_{}'.format(field, i))
-
-        return expected_fields
-
-    def _get_form_fields(self):
-        return OrderedDict((
-                (self.lookup_kwarg_gte, forms.SplitDateTimeField(
-                    label='',
-                    widget=AdminSplitDateTime(attrs={'placeholder': _('From date')}),
-                    localize=True,
-                    required=False
-                )),
-                (self.lookup_kwarg_lte, forms.SplitDateTimeField(
-                    label='',
-                    widget=AdminSplitDateTime(attrs={'placeholder': _('To date')}),
-                    localize=True,
-                    required=False
-                )),
-        ))
-
-    def _make_query_filter(self, request, validated_data):
-        query_params = {}
-        date_value_gte = validated_data.get(self.lookup_kwarg_gte, None)
-        date_value_lte = validated_data.get(self.lookup_kwarg_lte, None)
-
-        if date_value_gte:
-            query_params['{0}__gte'.format(self.field_path)] = self.make_dt_aware(
-                date_value_gte, self.get_timezone(request)
-            )
-        if date_value_lte:
-            query_params['{0}__lte'.format(self.field_path)] = self.make_dt_aware(
-                date_value_lte, self.get_timezone(request)
-            )
-
-        return query_params
