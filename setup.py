@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(
-    name='rangefilter',
+    name='django-admin-rangefilter',
     version='0.1',
     description="Custom rangefilter",
     url='https://github.com/takitakis/django-admin-rangefilter',
@@ -11,7 +11,7 @@ setup(
     license='MIT',
     keywords='rangefilter',
     packages=[
-        "rangefilter",
+        "django-admin-rangefilter",
     ],
     classifiers=[
         'Programming Language :: Python :: 3.6',
